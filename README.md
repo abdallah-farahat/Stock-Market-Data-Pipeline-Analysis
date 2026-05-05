@@ -418,7 +418,6 @@ LIMIT 10;
 | extract | AAPL | 1592 | 0 | SUCCESS |
 | extract | MSFT | 1592 | 0 | SUCCESS |
 
-> Total records loaded: **15,920 rows** across 10 tickers from 2020-01-01 to present
 
 ---
 
@@ -433,8 +432,6 @@ LIMIT 10;
 
 ---
 
-> **To add your own screenshots:** take a screenshot of pgAdmin or the Airflow UI,
-> save it inside a `screenshots/` folder, and replace the image paths above.
 
 ## Limitations & Challenges
 
