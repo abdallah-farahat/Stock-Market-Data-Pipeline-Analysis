@@ -327,7 +327,7 @@ The pipeline stores all data in PostgreSQL and can be explored visually via **pg
 
 ### Pipeline Dashboard
 
-![Pipeline Success](screenshots/airflow_dag_success.png)
+![Pipeline Success](screenshots/stock_market_pipeline-graph.png)
 > All 31 tasks completing successfully in Airflow — 10 extract → 10 transform → 10 load → 1 audit_summary
 
 ---
