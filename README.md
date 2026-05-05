@@ -251,6 +251,7 @@ This will:
 - Start PostgreSQL, create both `airflow` and `stock_db` databases
 - Seed `stock_db` with the full schema and `dim_company` data
 - Initialize Airflow and create the admin user
+- Start pgAdmin for visual database exploration
 
 ### 3 — Verify databases
 
@@ -275,6 +276,47 @@ The DAG runs automatically on weekdays at 06:00 UTC. To trigger manually:
 docker compose exec airflow-scheduler airflow dags trigger stock_market_pipeline
 
 # Or click "Trigger DAG" in the UI
+```
+
+### 6 — Explore the database with pgAdmin
+
+Navigate to **http://localhost:5050**
+
+- Email: `admin@admin.com`
+- Password: `admin`
+
+**Connect to the database:**
+1. Click **Add New Server**
+2. **General** tab → Name: `Stock DB`
+3. **Connection** tab → fill in:
+
+| Field | Value |
+|---|---|
+| Host | `postgres` |
+| Port | `5432` |
+| Maintenance database | `postgres` |
+| Username | `airflow` |
+| Password | `airflow` |
+| Save password | On |
+
+4. Click **Save**
+
+**Browse tables:**
+```
+Stock DB → Databases → stock_db → Schemas → public → Tables
+```
+Right-click any table → **View/Edit Data** → **All Rows**
+
+**Run analytical queries:**
+1. Click **Tools** → **Query Tool**
+2. Paste any query from `SQL/02_analytical_queries.sql`
+3. Press **F5** to execute
+
+### 7 — Run analytical queries via CLI
+
+```bash
+docker compose exec postgres psql -U airflow -d stock_db \
+  -f /opt/airflow/sql/02_analytical_queries.sql
 ```
 
 ### 6 — Run analytical queries
