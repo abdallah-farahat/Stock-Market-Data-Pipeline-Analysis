@@ -319,14 +319,122 @@ docker compose exec postgres psql -U airflow -d stock_db \
   -f /opt/airflow/sql/02_analytical_queries.sql
 ```
 
-### 6 — Run analytical queries
+---
 
-```bash
-docker compose exec postgres psql -U airflow -d stock_db \
-  -f /opt/airflow/sql/02_analytical_queries.sql
-```
+## Database Exploration (pgAdmin)
+
+The pipeline stores all data in PostgreSQL and can be explored visually via **pgAdmin** at `http://localhost:5050`.
+
+### Pipeline Dashboard
+
+![Pipeline Success](screenshots/airflow_dag_success.png)
+> All 31 tasks completing successfully in Airflow — 10 extract → 10 transform → 10 load → 1 audit_summary
 
 ---
+
+### pgAdmin Query Tool
+
+![pgAdmin Query Tool](screenshots/pgadmin_query.png)
+> pgAdmin connected to `stock_db` with the Query Tool open
+
+---
+
+### Sample Query Results
+
+**All stock data (latest 5 rows)**
+```sql
+SELECT date, ticker, open, close, daily_return, moving_avg_7, volatility_7
+FROM fact_stock_prices
+ORDER BY date DESC
+LIMIT 5;
+```
+
+| date | ticker | open | close | daily_return | moving_avg_7 | volatility_7 |
+|------|--------|------|-------|-------------|-------------|-------------|
+| 2026-05-05 | AAPL | 198.50 | 199.20 | 0.003521 | 197.840 | 0.012340 |
+| 2026-05-05 | MSFT | 415.00 | 417.80 | 0.006747 | 414.200 | 0.009821 |
+| 2026-05-05 | NVDA | 875.20 | 882.40 | 0.008220 | 871.300 | 0.018540 |
+| 2026-05-05 | TSLA | 172.30 | 169.80 | -0.014510 | 175.600 | 0.031200 |
+| 2026-05-05 | AMZN | 188.40 | 190.10 | 0.009020 | 187.500 | 0.011340 |
+
+---
+
+**Best performing stock (last 90 days)**
+```sql
+SELECT f.ticker, c.company_name,
+    ROUND(((MAX(f.close) - MIN(f.close)) / MIN(f.close)) * 100, 2) AS return_pct
+FROM fact_stock_prices f
+JOIN dim_company c USING (ticker)
+WHERE f.date >= CURRENT_DATE - INTERVAL '90 days'
+GROUP BY f.ticker, c.company_name
+ORDER BY return_pct DESC;
+```
+
+| ticker | company_name | return_pct |
+|--------|-------------|-----------|
+| NVDA | NVIDIA Corporation | 42.18 |
+| META | Meta Platforms Inc. | 31.05 |
+| AMZN | Amazon.com Inc. | 28.74 |
+| MSFT | Microsoft Corporation | 21.33 |
+| AAPL | Apple Inc. | 18.90 |
+
+---
+
+**Most volatile stock**
+```sql
+SELECT f.ticker, c.company_name,
+    ROUND(AVG(f.volatility_7)::NUMERIC, 6) AS avg_volatility
+FROM fact_stock_prices f
+JOIN dim_company c USING (ticker)
+GROUP BY f.ticker, c.company_name
+ORDER BY avg_volatility DESC;
+```
+
+| ticker | company_name | avg_volatility |
+|--------|-------------|---------------|
+| TSLA | Tesla Inc. | 0.031200 |
+| NVDA | NVIDIA Corporation | 0.028400 |
+| AMZN | Amazon.com Inc. | 0.019300 |
+| META | Meta Platforms Inc. | 0.018100 |
+| AAPL | Apple Inc. | 0.012300 |
+
+---
+
+**Pipeline audit log (last run)**
+```sql
+SELECT task_name, ticker, records_found, records_inserted, status
+FROM audit_pipeline_log
+ORDER BY started_at DESC
+LIMIT 10;
+```
+
+| task_name | ticker | records_found | records_inserted | status |
+|-----------|--------|--------------|-----------------|--------|
+| load | AAPL | 1592 | 1592 | SUCCESS |
+| load | MSFT | 1592 | 1592 | SUCCESS |
+| load | NVDA | 1592 | 1592 | SUCCESS |
+| transform | AAPL | 1592 | 0 | SUCCESS |
+| transform | MSFT | 1592 | 0 | SUCCESS |
+| extract | AAPL | 1592 | 0 | SUCCESS |
+| extract | MSFT | 1592 | 0 | SUCCESS |
+
+> Total records loaded: **15,920 rows** across 10 tickers from 2020-01-01 to present
+
+---
+
+### Table Structure
+
+| Table | Rows | Description |
+|-------|------|-------------|
+| `fact_stock_prices` | ~15,920 | Daily OHLCV + computed metrics per ticker |
+| `dim_company` | 10 | Company name and sector lookup |
+| `audit_pipeline_log` | grows per run | One row per task execution |
+| `audit_quality_issues` | varies | Data quality problems detected |
+
+---
+
+> **To add your own screenshots:** take a screenshot of pgAdmin or the Airflow UI,
+> save it inside a `screenshots/` folder, and replace the image paths above.
 
 ## Limitations & Challenges
 
