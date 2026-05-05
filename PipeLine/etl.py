@@ -174,7 +174,17 @@ def load_to_database(df: pd.DataFrame, ticker: str,
 
         # Keep only columns that exist in df
         cols = [c for c in columns if c in df.columns]
-        records = df[cols].where(pd.notnull(df[cols]), None).to_dict("records")
+
+        # Cast to object dtype BEFORE replacing NaN with None.
+        # On numeric dtypes pandas silently converts None back to NaN,
+        # which psycopg2 then stores as PostgreSQL NaN instead of NULL —
+        # breaking aggregate functions like AVG().
+        records = (
+            df[cols]
+            .astype(object)
+            .where(pd.notnull(df[cols]), None)
+            .to_dict("records")
+        )
 
         insert_sql = f"""
             INSERT INTO fact_stock_prices ({", ".join(cols)})
