@@ -19,9 +19,9 @@ Financial teams need reliable, up-to-date stock data to track price trends, meas
 ## Architecture
 
 ```
-Yahoo Finance API (yfinance)
-         │
-         ▼
+         Yahoo Finance API (yfinance)
+                   │
+                   ▼
   ┌─────────────────────────────────────────┐
   │           EXTRACT (per ticker)          │
   │  • Incremental date-based fetch         │
