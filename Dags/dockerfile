@@ -1,0 +1,22 @@
+# Extended Apache Airflow image with stock market pipeline dependencies
+FROM apache/airflow:3.0.5-python3.12
+
+# Install additional system dependencies if needed
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to airflow user
+USER airflow
+
+# Install Python packages for stock market data pipeline
+RUN pip install --no-cache-dir \
+    yfinance \
+    pandas \
+    requests \
+    sqlalchemy \
+    psycopg2-binary \
+    apache-airflow-providers-postgres \
+    apache-airflow-providers-http
